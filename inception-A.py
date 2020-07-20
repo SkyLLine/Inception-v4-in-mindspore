@@ -10,35 +10,35 @@ from mindspore.common.initializer import TruncatedNormal
 
 
 class inception_A(nn.Cell):
-    def __init__(self, in_channle):
+    def __init__(self, in_channle, bias=False):
         super().__init__()
         self.pool_cov1x1 = nn.SequentialCell([
             nn.AvgPool2d(kernel_size=3, pad_mode="same"),
-            nn.Conv2d(in_channle, 96, kernel_size=1),
+            nn.Conv2d(in_channle, 96, kernel_size=1, has_bias=bias),
             nn.BatchNorm2d(96),
             nn.ReLU()
         ])
         self.cov1x1 = nn.SequentialCell([
-            nn.Conv2d(in_channle, 96),
+            nn.Conv2d(in_channle, 96, has_bias=bias),
             nn.BatchNorm2d(96),
             nn.ReLU()
         ])
         self.conv1x1_conv3x3 = nn.SequentialCell([
-            nn.Conv2d(in_channle, 64, 1),
+            nn.Conv2d(in_channle, 64, 1, has_bias=bias),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.Conv2d(64, 96, 3),
+            nn.Conv2d(64, 96, 3, has_bias=bias),
             nn.BatchNorm2d(96),
             nn.ReLU()
         ])
         self.conv1x1_conv3x3_conv3x3 = nn.SequentialCell([
-            nn.Conv2d(in_channle, 64, 1),
+            nn.Conv2d(in_channle, 64, 1, has_bias=bias),
             nn.BatchNorm2d(64),
             nn.ReLU(),
-            nn.Conv2d(64, 96, 3),
+            nn.Conv2d(64, 96, 3, has_bias=bias),
             nn.BatchNorm2d(96),
             nn.ReLU(),
-            nn.Conv2d(96, 96, 3),
+            nn.Conv2d(96, 96, 3, has_bias=bias),
             nn.BatchNorm2d(96),
             nn.ReLU()
         ])
