@@ -19,7 +19,7 @@ class inception_C(nn.Cell):
             nn.ReLU()
         ])
         self.cov1x1 = nn.SequentialCell([
-            nn.Conv2d(in_channle, 256, has_bias=bias),
+            nn.Conv2d(in_channle, 256, 1, has_bias=bias),
             nn.BatchNorm2d(256),
             nn.ReLU()
         ])
