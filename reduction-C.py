@@ -9,37 +9,44 @@ from mindspore.train.callback import ModelCheckpoint, CheckpointConfig, LossMoni
 from mindspore.common.initializer import TruncatedNormal
 
 
-class reduction_A(nn.Cell):
+class reduction_B(nn.Cell):
     def __init__(self, in_channle, bias=False):
         super().__init__()
         self.pool = nn.SequentialCell([
             nn.MaxPool2d(kernel_size=3, stride=2, pad_mode="valid"),
         ])
-        self.cov3x3 = nn.SequentialCell([
-            nn.Conv2d(in_channle, 384, 3, stride=2, has_bias=bias, pad_mode="valid"),
-            nn.BatchNorm2d(384),
-            nn.ReLU()
-        ])
-        self.conv1x1_conv3x3_conv3x3 = nn.SequentialCell([
+
+        self.conv1x1_conv3x3 = nn.SequentialCell([
             nn.Conv2d(in_channle, 192, 1, has_bias=bias),
             nn.BatchNorm2d(192),
             nn.ReLU(),
-            nn.Conv2d(192, 224, 3, has_bias=bias),
-            nn.BatchNorm2d(224),
+            nn.Conv2d(192, 192, 3, stride=2, has_bias=bias, pad_mode="valid"),
+            nn.BatchNorm2d(192),
             nn.ReLU(),
-            nn.Conv2d(224, 256, 3, stride=2, has_bias=bias, pad_mode="valid"),
+        ])
+        self.conv1x1_conv1x7_conv_7x1_conv3x3 = nn.SequentialCell([
+            nn.Conv2d(in_channle, 256, 1, has_bias=bias),
             nn.BatchNorm2d(256),
-            nn.ReLU()
+            nn.ReLU(),
+            nn.Conv2d(256, 256, (1, 7), has_bias=bias),
+            nn.BatchNorm2d(256),
+            nn.ReLU(),
+            nn.Conv2d(256, 320, (7, 1), has_bias=bias),
+            nn.BatchNorm2d(320),
+            nn.ReLU(),
+            nn.Conv2d(320, 320, 3, stride=2, has_bias=bias, pad_mode="valid"),
+            nn.BatchNorm2d(320),
+            nn.ReLU(),
         ])
         self.cat = operator.Concat()
 
     def construct(self, x):
         pool_out = self.pool(x)
-        cov3x3_out = self.cov3x3(x)
-        conv1x1_conv3x3_conv3x3 = self.conv1x1_conv3x3_conv3x3(x)
+        conv1x1_conv3x3_out = self.conv1x1_conv3x3(x)
+        conv1x1_conv1x7_conv_7x1_conv3x3_out = self.conv1x1_conv1x7_conv_7x1_conv3x3(x)
         x = self.cat([
             pool_out,
-            cov3x3_out,
-            conv1x1_conv3x3_conv3x3,
+            conv1x1_conv3x3_out,
+            conv1x1_conv1x7_conv_7x1_conv3x3_out,
         ])
         return x
