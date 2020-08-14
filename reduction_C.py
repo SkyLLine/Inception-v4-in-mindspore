@@ -9,7 +9,7 @@ from mindspore.train.callback import ModelCheckpoint, CheckpointConfig, LossMoni
 from mindspore.common.initializer import TruncatedNormal
 
 
-class reduction_B(nn.Cell):
+class reduction_C(nn.Cell):
     def __init__(self, in_channle, bias=False):
         super().__init__()
         self.pool = nn.SequentialCell([
