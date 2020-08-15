@@ -113,7 +113,7 @@ def get_image_iterator(dir, trans=False, size=None, begin=None):
 
 
 if __name__ == "__main__":
-    image, image_name = get_image_iterator(Path("./dataset"))
+    image, image_name = get_image_iterator(Path("./ImageNet_train"))
     dataset = create_dataset(image, range(len(image)), True)
     # print(image)
     for data in dataset.create_tuple_iterator():  # each data is a sequence

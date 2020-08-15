@@ -5,7 +5,7 @@ import mindspore.ops.operations as operator
 
 class Stem(nn.Cell):
     def __init__(self, in_channels):
-        super(Stem).__init__()
+        super().__init__()
         self.conv2d_1a_3x3 = nn.Conv2d(in_channels=in_channels, out_channels=32, kernel_size=3, stride=2,
                                        pad_mode='valid')
         self.conv2d_2a_3x3 = nn.Conv2d(32, 32, 3, stride=1, pad_mode='valid')
