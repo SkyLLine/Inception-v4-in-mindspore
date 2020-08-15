@@ -27,7 +27,7 @@ class Generator():
 # 调用这个函数就行，传入两个list 分别为image，label （label采用1,2,3这种离散标注，而非01矩阵，返回的label也是离散标注）
 # 第三个参数是计算使用线程数，根据自己机器情况调整
 #
-def create_dataset(image, label, do_train, repeat_num=1, batch_size=4, num_parallel_workers=None, drop_remainder=False):
+def create_dataset(image, label, do_train, repeat_num=1, batch_size=4, num_parallel_workers=1, drop_remainder=False):
     """
     create a train or eval dataset
 
@@ -70,12 +70,12 @@ def create_dataset(image, label, do_train, repeat_num=1, batch_size=4, num_paral
     type_cast_op = C2.TypeCast(mstype.int32)
     #
     dataset = dataset.map(input_columns=["image"], num_parallel_workers=num_parallel_workers, operations=trans)
-    dataset = dataset.map(input_columns=["label"], operations=type_cast_op)
+    dataset = dataset.map(input_columns=["label"], num_parallel_workers=num_parallel_workers, operations=type_cast_op)
     #
     # # apply batch operations
     buffer_size = 10000
     dataset = dataset.shuffle(buffer_size=buffer_size)
-    dataset = dataset.batch(4, drop_remainder=drop_remainder)
+    dataset = dataset.batch(batch_size, drop_remainder=drop_remainder)
 
     # apply dataset repeat operation
     dataset = dataset.repeat(repeat_num)
