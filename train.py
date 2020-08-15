@@ -9,6 +9,7 @@ from network import Stem
 from reduction_A import reduction_A
 from reduction_B import reduction_B
 from reduction_C import reduction_C
+import mindspore.dataset as ds
 
 dict = {}
 i = 0
@@ -55,4 +56,9 @@ class InceptionV4(nn.Cell):
         return layers
 
 def train(epoch):
-    for i in range()
+    pass
+
+if __name__=='__main__':
+    DATA_DIR = "dataset/"
+
+    # imagenet = ds.(DATA_DIR)
