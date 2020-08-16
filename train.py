@@ -303,7 +303,7 @@ def ans():
     context.set_context(mode=context.GRAPH_MODE)
     # net = InceptionV4(4, 7, 3)
     pic = []
-    s = ms.Tensor(np.ones((1, 1, 299, 299)), ms.float32)
+    s = np.ones((299, 299, 3))
     a = s
     b = s
     pic.append(s)
