@@ -3,11 +3,11 @@ import mindspore.nn as nn
 import mindspore.ops.operations as operator
 import os
 from lr_generator import get_lr
-from preprocess import pre
 from CrossEntropy import CrossEntropy
 import argparse
 from inception_A import inception_A
 from inception_B import inception_B
+import numpy as np
 from inception_C import inception_C
 from network import Stem
 from reduction_A import reduction_A
@@ -46,15 +46,17 @@ import mindspore.nn as nn
 import mindspore.common.initializer as weight_init
 from dataloader import create_dataset
 
+
 def unzipfile(gzip_path):
     """unzip dataset file
     Args:
         gzip_path: dataset file path
     """
-    open_file = open(gzip_path.replace('.gz',''), 'wb')
+    open_file = open(gzip_path.replace('.gz', ''), 'wb')
     gz_file = gzip.GzipFile(gzip_path)
     open_file.write(gz_file.read())
     gz_file.close()
+
 
 def download_dataset():
     """Download the dataset from http://yann.lecun.com/exdb/mnist/."""
@@ -63,69 +65,71 @@ def download_dataset():
     test_path = "./MNIST_Data/test/"
     train_path_check = os.path.exists(train_path)
     test_path_check = os.path.exists(test_path)
-    if train_path_check == False and test_path_check ==False:
+    if train_path_check == False and test_path_check == False:
         os.makedirs(train_path)
         os.makedirs(test_path)
-    train_url = {"http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz", "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz"}
-    test_url = {"http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz", "http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz"}
+    train_url = {"http://yann.lecun.com/exdb/mnist/train-images-idx3-ubyte.gz",
+                 "http://yann.lecun.com/exdb/mnist/train-labels-idx1-ubyte.gz"}
+    test_url = {"http://yann.lecun.com/exdb/mnist/t10k-images-idx3-ubyte.gz",
+                "http://yann.lecun.com/exdb/mnist/t10k-labels-idx1-ubyte.gz"}
     for url in train_url:
         url_parse = urlparse(url)
         # split the file name from url
-        file_name = os.path.join(train_path,url_parse.path.split('/')[-1])
-        if not os.path.exists(file_name.replace('.gz','')):
+        file_name = os.path.join(train_path, url_parse.path.split('/')[-1])
+        if not os.path.exists(file_name.replace('.gz', '')):
             file = urllib.request.urlretrieve(url, file_name)
             unzipfile(file_name)
             os.remove(file_name)
     for url in test_url:
         url_parse = urlparse(url)
         # split the file name from url
-        file_name = os.path.join(test_path,url_parse.path.split('/')[-1])
-        if not os.path.exists(file_name.replace('.gz','')):
+        file_name = os.path.join(test_path, url_parse.path.split('/')[-1])
+        if not os.path.exists(file_name.replace('.gz', '')):
             file = urllib.request.urlretrieve(url, file_name)
             unzipfile(file_name)
             os.remove(file_name)
 
 
-def create_dataset(data_path, batch_size=32, repeat_size=1,
-                   num_parallel_workers=1):
-    """ create dataset for train or test
-    Args:
-        data_path: Data path
-        batch_size: The number of data records in each group
-        repeat_size: The number of replicated data records
-        num_parallel_workers: The number of parallel workers
-    """
-    # define dataset
-    mnist_ds = ds.MnistDataset(data_path)
+# def create_dataset(data_path, batch_size=32, repeat_size=1,
+#                    num_parallel_workers=1):
+#     """ create dataset for train or test
+#     Args:
+#         data_path: Data path
+#         batch_size: The number of data records in each group
+#         repeat_size: The number of replicated data records
+#         num_parallel_workers: The number of parallel workers
+#     """
+#     # define dataset
+#     mnist_ds = ds.MnistDataset(data_path)
 
-    # define operation parameters
-    resize_height, resize_width = 299, 299
-    rescale = 1.0 / 255.0
-    shift = 0.0
-    rescale_nml = 1 / 0.3081
-    shift_nml = -1 * 0.1307 / 0.3081
+#     # define operation parameters
+#     resize_height, resize_width = 299, 299
+#     rescale = 1.0 / 255.0
+#     shift = 0.0
+#     rescale_nml = 1 / 0.3081
+#     shift_nml = -1 * 0.1307 / 0.3081
 
-    # define map operations
-    resize_op = CV.Resize((resize_height, resize_width), interpolation=Inter.LINEAR)  # Resize images to (32, 32)
-    rescale_nml_op = CV.Rescale(rescale_nml, shift_nml) # normalize images
-    rescale_op = CV.Rescale(rescale, shift) # rescale images
-    hwc2chw_op = CV.HWC2CHW() # change shape from (height, width, channel) to (channel, height, width) to fit network.
-    type_cast_op = C.TypeCast(mstype.int32) # change data type of label to int32 to fit network
+#     # define map operations
+#     resize_op = CV.Resize((resize_height, resize_width), interpolation=Inter.LINEAR)  # Resize images to (32, 32)
+#     rescale_nml_op = CV.Rescale(rescale_nml, shift_nml) # normalize images
+#     rescale_op = CV.Rescale(rescale, shift) # rescale images
+#     hwc2chw_op = CV.HWC2CHW() # change shape from (height, width, channel) to (channel, height, width) to fit network.
+#     type_cast_op = C.TypeCast(mstype.int32) # change data type of label to int32 to fit network
 
-    # apply map operations on images
-    mnist_ds = mnist_ds.map(input_columns="label", operations=type_cast_op, num_parallel_workers=num_parallel_workers)
-    mnist_ds = mnist_ds.map(input_columns="image", operations=resize_op, num_parallel_workers=num_parallel_workers)
-    mnist_ds = mnist_ds.map(input_columns="image", operations=rescale_op, num_parallel_workers=num_parallel_workers)
-    mnist_ds = mnist_ds.map(input_columns="image", operations=rescale_nml_op, num_parallel_workers=num_parallel_workers)
-    mnist_ds = mnist_ds.map(input_columns="image", operations=hwc2chw_op, num_parallel_workers=num_parallel_workers)
+#     # apply map operations on images
+#     mnist_ds = mnist_ds.map(input_columns="label", operations=type_cast_op, num_parallel_workers=num_parallel_workers)
+#     mnist_ds = mnist_ds.map(input_columns="image", operations=resize_op, num_parallel_workers=num_parallel_workers)
+#     mnist_ds = mnist_ds.map(input_columns="image", operations=rescale_op, num_parallel_workers=num_parallel_workers)
+#     mnist_ds = mnist_ds.map(input_columns="image", operations=rescale_nml_op, num_parallel_workers=num_parallel_workers)
+#     mnist_ds = mnist_ds.map(input_columns="image", operations=hwc2chw_op, num_parallel_workers=num_parallel_workers)
 
-    # apply DatasetOps
-    buffer_size = 10000
-    mnist_ds = mnist_ds.shuffle(buffer_size=buffer_size)  # 10000 as in LeNet train script
-    mnist_ds = mnist_ds.batch(batch_size, drop_remainder=True)
-    mnist_ds = mnist_ds.repeat(repeat_size)
+#     # apply DatasetOps
+#     buffer_size = 10000
+#     mnist_ds = mnist_ds.shuffle(buffer_size=buffer_size)  # 10000 as in LeNet train script
+#     mnist_ds = mnist_ds.batch(batch_size, drop_remainder=True)
+#     mnist_ds = mnist_ds.repeat(repeat_size)
 
-    return mnist_ds
+#     return mnist_ds
 
 parser = argparse.ArgumentParser(description='Image classification')
 parser.add_argument('--run_distribute', type=bool, default=True, help='Run distribute')
@@ -140,10 +144,6 @@ opt = parser.parse_args()
 
 dict = {}
 i = 0
-
-for filename in os.listdir('./ImageNet_train'):
-    dict[filename] = i
-    i += 1
 
 
 class InceptionV4(nn.Cell):
@@ -160,7 +160,6 @@ class InceptionV4(nn.Cell):
         #### reshape成2维
         self.dropout = nn.Dropout(0.8)
         self.linear = nn.Dense(1536, 1000, activation='softmax')
-
 
     def construct(self, x):
         x = self.Stem(x)
@@ -207,6 +206,7 @@ class InceptionV4(nn.Cell):
 
         return layers
 
+
 def train(opt):
     # device_id = int(os.getenv('DEVICE_ID'))
     #
@@ -223,7 +223,6 @@ def train(opt):
 
     loss = CrossEntropy(smooth_factor=config.label_smooth_factor, num_classes=config.class_num)
 
-    pic, lab = pre()
     mnist_path = "./MNIST_Data"
     download_dataset()
     dataset = create_dataset(os.path.join(mnist_path, "train"), 32, 1)
@@ -246,10 +245,12 @@ def train(opt):
 
     model.train(config.epoch_size, dataset, callbacks=[ckpoint_cb, LossMonitor()], dataset_sink_mode=False)
 
+
 #########################################
 def weight_variable():
     """Weight initial."""
     return TruncatedNormal(0.02)
+
 
 def conv(in_channels, out_channels, kernel_size, stride=1, padding=0):
     """Conv layer weight initial."""
@@ -265,8 +266,10 @@ def fc_with_initialize(input_channels, out_channels):
     bias = weight_variable()
     return nn.Dense(input_channels, out_channels, weight, bias)
 
+
 class LeNet5(nn.Cell):
     """Lenet network structure."""
+
     # define the operator required
     def __init__(self):
         super(LeNet5, self).__init__()
@@ -296,8 +299,37 @@ class LeNet5(nn.Cell):
         return x
 
 
+def ans():
+    net = InceptionV4(4, 7, 3)
+    pic = []
+    s = ms.Tensor(np.ones((1, 1, 299, 299)), ms.float32)
+    a = s
+    b = s
+    pic.append(s)
+    pic.append(a)
+    pic.append(b)
+    lab = []
+    lab.append(0)
+    lab.append(1)
+    lab.append(2)
+    print("start")
+    ds = create_dataset(pic, lab, True)
+    stepsize = 32
+    lr = 0.01
 
-if __name__=='__main__':
-    train(opt)
+    optt = nn.Momentum(net.trainable_params(), lr, momentum=0.9)
 
-    # imagenet = ds.(DATA_DIR)
+    config_ck = CheckpointConfig(save_checkpoint_steps=1875, keep_checkpoint_max=10)
+    # save the network model and parameters for subsequence fine-tuning
+    ckpoint_cb = ModelCheckpoint(prefix="checkpoint_lenet", config=config_ck)
+    # group layers into an object with training and evaluation features
+
+    net_loss = SoftmaxCrossEntropyWithLogits(is_grad=False, sparse=True, reduction='mean')
+
+    model = Model(net, net_loss, optt, metrics={"Accuracy": Accuracy()})
+
+    model.train(config.epoch_size, ds, callbacks=[ckpoint_cb, LossMonitor()], dataset_sink_mode=False)
+
+
+if __name__ == '__main__':
+    ans()
