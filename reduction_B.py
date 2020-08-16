@@ -38,15 +38,15 @@ class reduction_B(nn.Cell):
             nn.BatchNorm2d(320),
             nn.ReLU(),
         ])
-        self.cat = operator.Concat()
+        self.cat = operator.Concat(1)
 
     def construct(self, x):
         pool_out = self.pool(x)
         conv1x1_conv3x3_out = self.conv1x1_conv3x3(x)
         conv1x1_conv1x7_conv_7x1_conv3x3_out = self.conv1x1_conv1x7_conv_7x1_conv3x3(x)
-        x = self.cat([
+        x = self.cat((
             pool_out,
             conv1x1_conv3x3_out,
             conv1x1_conv1x7_conv_7x1_conv3x3_out,
-        ])
+        ))
         return x

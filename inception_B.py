@@ -51,17 +51,17 @@ class inception_B(nn.Cell):
             nn.BatchNorm2d(256),
             nn.ReLU()
         ])
-        self.cat = operator.Concat()
+        self.cat = operator.Concat(1)
 
     def construct(self, x):
         pool_cov1x1_out = self.pool_cov1x1(x)
         cov1x1_out = self.cov1x1(x)
         conv1x1_conv1x7_conv7x1_out = self.conv1x1_conv1x7_conv7x1(x)
         conv1x1_conv1x7_conv7x1_conv1x7_conv7x1_out = self.conv1x1_conv1x7_conv7x1_conv1x7_conv7x1(x)
-        x = self.cat([
+        x = self.cat((
             pool_cov1x1_out,
             cov1x1_out,
             conv1x1_conv1x7_conv7x1_out,
             conv1x1_conv1x7_conv7x1_conv1x7_conv7x1_out
-        ])
+        ))
         return x

@@ -155,10 +155,11 @@ class InceptionV4(nn.Cell):
         self.inception_B = inception_B(1024)
         self.reduction_B = reduction_B(1024)
         self.inception_C = inception_C(1536)
-        self.avgpool = nn.AvgPool2d(7)
+        self.avgpool = nn.AvgPool2d(8)
 
+        #### reshape成2维
         self.dropout = nn.Dropout(0.8)
-        self.linear = nn.Dense(35 * 35 * 384, 10, activation='softmax')
+        self.linear = nn.Dense(1536, 1000, activation='softmax')
 
 
     def construct(self, x):
