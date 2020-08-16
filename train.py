@@ -181,7 +181,7 @@ class InceptionV4(nn.Cell):
         x = self.inception_C(x)
         x = self.avgpool(x)
         x = self.dropout(x)
-        x = x.view(-1, 35 * 35 * 384)
+        x = nn.Flatten()(x)
         x = self.linear(x)
         return x
 
