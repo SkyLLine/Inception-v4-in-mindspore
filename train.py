@@ -147,7 +147,7 @@ i = 0
 
 
 class InceptionV4(nn.Cell):
-    def __init__(self):
+    def __init__(self, A, B, C):
         super().__init__()
         self.Stem = Stem(3)
         self.inception_A = inception_A(384)
@@ -159,7 +159,7 @@ class InceptionV4(nn.Cell):
 
         #### reshape成2维
         self.dropout = nn.Dropout(0.8)
-        self.linear = nn.Dense(1536, 1000, activation='softmax')
+        self.linear = nn.Dense(1536, 1000)
 
     def construct(self, x):
         x = self.Stem(x)
@@ -301,7 +301,7 @@ class LeNet5(nn.Cell):
 
 def ans():
     context.set_context(mode=context.GRAPH_MODE)
-    net = InceptionV4()
+    net = InceptionV4(4, 7, 3)
     pic = []
     s = np.ones((299, 299, 3))
     a = s
@@ -314,15 +314,15 @@ def ans():
     lab.append(1)
     lab.append(2)
     print("start")
-    ds = create_dataset(pic, lab, True)
+    ds = create_dataset(pic, lab, True, 4, 1)
     for data in ds.create_tuple_iterator():
         print(data[0].shape)
-    stepsize = 32
+    stepsize = 1
     lr = 0.01
 
     optt = nn.Momentum(net.trainable_params(), lr, momentum=0.9)
 
-    config_ck = CheckpointConfig(save_checkpoint_steps=1875, keep_checkpoint_max=10)
+    config_ck = CheckpointConfig(save_checkpoint_steps=1, keep_checkpoint_max=10)
     # save the network model and parameters for subsequence fine-tuning
     ckpoint_cb = ModelCheckpoint(prefix="checkpoint_lenet", config=config_ck)
     # group layers into an object with training and evaluation features
@@ -331,7 +331,7 @@ def ans():
 
     model = Model(net, net_loss, optt, metrics={"Accuracy": Accuracy()})
 
-    model.train(config.epoch_size, ds, callbacks=[ckpoint_cb, LossMonitor()], dataset_sink_mode=False)
+    model.train(4, ds, dataset_sink_mode=False)
 
 
 if __name__ == '__main__':
