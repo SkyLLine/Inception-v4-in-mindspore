@@ -300,7 +300,8 @@ class LeNet5(nn.Cell):
 
 
 def ans():
-    net = InceptionV4(4, 7, 3)
+    context.set_context(mode=context.GRAPH_MODE)
+    # net = InceptionV4(4, 7, 3)
     pic = []
     s = ms.Tensor(np.ones((1, 1, 299, 299)), ms.float32)
     a = s
@@ -314,21 +315,23 @@ def ans():
     lab.append(2)
     print("start")
     ds = create_dataset(pic, lab, True)
-    stepsize = 32
-    lr = 0.01
-
-    optt = nn.Momentum(net.trainable_params(), lr, momentum=0.9)
-
-    config_ck = CheckpointConfig(save_checkpoint_steps=1875, keep_checkpoint_max=10)
-    # save the network model and parameters for subsequence fine-tuning
-    ckpoint_cb = ModelCheckpoint(prefix="checkpoint_lenet", config=config_ck)
-    # group layers into an object with training and evaluation features
-
-    net_loss = SoftmaxCrossEntropyWithLogits(is_grad=False, sparse=True, reduction='mean')
-
-    model = Model(net, net_loss, optt, metrics={"Accuracy": Accuracy()})
-
-    model.train(config.epoch_size, ds, callbacks=[ckpoint_cb, LossMonitor()], dataset_sink_mode=False)
+    for data in ds.create_tuple_iterator():
+        print(data[0].shape)
+    # stepsize = 32
+    # lr = 0.01
+    #
+    # optt = nn.Momentum(net.trainable_params(), lr, momentum=0.9)
+    #
+    # config_ck = CheckpointConfig(save_checkpoint_steps=1875, keep_checkpoint_max=10)
+    # # save the network model and parameters for subsequence fine-tuning
+    # ckpoint_cb = ModelCheckpoint(prefix="checkpoint_lenet", config=config_ck)
+    # # group layers into an object with training and evaluation features
+    #
+    # net_loss = SoftmaxCrossEntropyWithLogits(is_grad=False, sparse=True, reduction='mean')
+    #
+    # model = Model(net, net_loss, optt, metrics={"Accuracy": Accuracy()})
+    #
+    # model.train(config.epoch_size, ds, callbacks=[ckpoint_cb, LossMonitor()], dataset_sink_mode=False)
 
 
 if __name__ == '__main__':
