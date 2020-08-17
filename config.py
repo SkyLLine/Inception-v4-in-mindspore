@@ -19,11 +19,11 @@ from easydict import EasyDict as ed
 
 config = ed({
     "class_num": 1000,
-    "batch_size": 32,
+    "batch_size": 1,
     "loss_scale": 1024,
     "momentum": 0.9,
     "weight_decay": 1e-4,
-    "epoch_size": 90,
+    "epoch_size": 4,
     "buffer_size": 1000,
     "image_height": 299,
     "image_width": 299,

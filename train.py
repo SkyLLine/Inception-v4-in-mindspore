@@ -147,7 +147,7 @@ i = 0
 
 
 class InceptionV4(nn.Cell):
-    def __init__(self, A, B, C):
+    def __init__(self):
         super().__init__()
         self.Stem = Stem(3)
         self.inception_A = inception_A(384)
@@ -301,37 +301,28 @@ class LeNet5(nn.Cell):
 
 def ans():
     context.set_context(mode=context.GRAPH_MODE)
-    net = InceptionV4(4, 7, 3)
-    pic = []
-    s = np.ones((299, 299, 3))
-    a = s
-    b = s
-    pic.append(s)
-    pic.append(a)
-    pic.append(b)
-    lab = []
-    lab.append(0)
-    lab.append(1)
-    lab.append(2)
+    net = InceptionV4()
     print("start")
-    ds = create_dataset(pic, lab, True, 4, 1)
-    for data in ds.create_tuple_iterator():
-        print(data[0].shape)
-    stepsize = 1
+    ds = create_dataset('./dataset', True, config.epoch_size, config.batch_size)
     lr = 0.01
-
     optt = nn.Momentum(net.trainable_params(), lr, momentum=0.9)
-
-    config_ck = CheckpointConfig(save_checkpoint_steps=1, keep_checkpoint_max=10)
+    config_ck = CheckpointConfig(save_checkpoint_steps=1875, keep_checkpoint_max=10)
     # save the network model and parameters for subsequence fine-tuning
     ckpoint_cb = ModelCheckpoint(prefix="checkpoint_lenet", config=config_ck)
     # group layers into an object with training and evaluation features
+    net_loss = CrossEntropy(smooth_factor=config.label_smooth_factor, num_classes=config.class_num)
 
-    net_loss = SoftmaxCrossEntropyWithLogits(is_grad=False, sparse=True, reduction='mean')
+    loss_scale = FixedLossScaleManager(config.loss_scale, drop_overflow_update=False)
+    lr = Tensor(get_lr(global_step=0, lr_init=config.lr_init, lr_end=0.0, lr_max=config.lr_max,
+                       warmup_epochs=config.warmup_epochs, total_epochs=config.epoch_size, steps_per_epoch=config.batch_size,
+                       lr_decay_mode='cosine'))
+
+    optt = Momentum(filter(lambda x: x.requires_grad, net.get_parameters()), lr, config.momentum,
+                   config.weight_decay, config.loss_scale)
 
     model = Model(net, net_loss, optt, metrics={"Accuracy": Accuracy()})
 
-    model.train(4, ds, dataset_sink_mode=False)
+    model.train(config.epoch_size, ds, callbacks=[ckpoint_cb, LossMonitor()], dataset_sink_mode=False)
 
 
 if __name__ == '__main__':
